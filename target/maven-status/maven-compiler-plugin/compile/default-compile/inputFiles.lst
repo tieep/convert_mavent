@@ -24,7 +24,6 @@ D:\Junit\mavent_convert\computer-store\src\main\java\dto\CTQuyenChucNangDTO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dto\PhieuNhapDTO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dao\UserDAO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\bus\KhachHangBUS.java
-D:\Junit\mavent_convert\computer-store\src\main\java\test\Test.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dao\NhaCungCapDAO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\gui\ChonKhachHangGUI.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dto\CTSanPhamDTO.java
@@ -40,11 +39,14 @@ D:\Junit\mavent_convert\computer-store\src\main\java\gui\MainGUI.java
 D:\Junit\mavent_convert\computer-store\src\main\java\gui\ThemKhachHangGUI.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dto\HoaDonDTO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\gui\BaoHanhGUI.java
+D:\Junit\mavent_convert\computer-store\src\main\java\com\example\CalculatorTest.java
 D:\Junit\mavent_convert\computer-store\src\main\java\bus\HoaDonBUS.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dao\CTPhieuNhapDAO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dao\CTHoaDonDAO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\gui\ThongKeGUI.java
 D:\Junit\mavent_convert\computer-store\src\main\java\bus\SanPhamBUS.java
+D:\Junit\mavent_convert\computer-store\src\main\java\test11\Test.java
+D:\Junit\mavent_convert\computer-store\src\main\java\com\example\Calculator.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dao\SanPhamDAO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\dto\SanPhamDTO.java
 D:\Junit\mavent_convert\computer-store\src\main\java\bus\BaoHanhBUS.java
