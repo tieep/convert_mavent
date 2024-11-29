@@ -9,6 +9,7 @@ class CalculatorTest {
 
     @Test
     void testAdd() {
+        System.out.print("Mong đợi: "+5+", Thực tế: "+calculator.add(2, 3));
         assertEquals(5, calculator.add(2, 3), "2 + 3 should equal 5");
     }
 
