@@ -171,12 +171,17 @@ public class PhieuNhapGUI extends JPanel {
         tf_tim_kiem.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                handleSearchByComboBox();
+                String txt = tf_tim_kiem.getText();
+                int choice = cb_tim_kiem.getSelectedIndex();
+                rowSorter.setRowFilter(createRowFilter(txt.trim(), choice));
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                handleSearchByComboBox();
+                String txt = tf_tim_kiem.getText();
+                int choice = cb_tim_kiem.getSelectedIndex();
+                rowSorter.setRowFilter(createRowFilter(txt.trim(), choice));
+
             }
 
             @Override
@@ -214,14 +219,11 @@ public class PhieuNhapGUI extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 Date input1 = date_from.getDate();
                 Date input2 = date_to.getDate();
-                if (input1 == null || input2 == null || input1.after(input2)) {
+                ArrayList<PhieuNhapDTO> result= getSearchList(input1, input2);
+                if (result == null)
                     JOptionPane.showMessageDialog(null, "Khoảng thời gian không hợp lệ");
-                    return;
-                }
-                LocalDate date1 = input1.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                LocalDate date2 = input2.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-                reloadPN(phieuNhapBUS.filter(date1, date2));
+                else
+                    reloadPN(result);
             }
         });
 
@@ -237,13 +239,16 @@ public class PhieuNhapGUI extends JPanel {
         return pn_filter;
     }
 
-    public void handleSearchByComboBox() {
-        String text = tf_tim_kiem.getText();
-        int choice = cb_tim_kiem.getSelectedIndex();
-        if (text.trim().length() == 0) {
-            rowSorter.setRowFilter(null);
+    public ArrayList<PhieuNhapDTO> getSearchList(Date input1, Date input2) {
+        PhieuNhapBUS phieuNhapBUS = new PhieuNhapBUS();
+        phieuNhapBUS.list();
+        if (input1 == null || input2 == null || input1.after(input2)) {
+
+            return null;
         } else {
-            rowSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text + "", choice));
+            LocalDate date1 = input1.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate date2 = input2.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            return phieuNhapBUS.filter(date1, date2);
         }
     }
 
@@ -353,6 +358,14 @@ public class PhieuNhapGUI extends JPanel {
             modelCT.addRow(new Object[]{
                 ctpn.getIdSanPham(), ctpn.getIdSanPham(), ctpn.getSoLuong(), ctpn.getDonGia()
             });
+        }
+    }
+
+    public RowFilter createRowFilter(String txt, int choice) {
+        if (txt == null || txt.trim().isEmpty()) {
+            return null;
+        } else {
+            return RowFilter.regexFilter("(?i)" + txt + "", choice);
         }
     }
 }
