@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 public class MySQLConnect {
     private String user = "root";
-    private String password = "Oanh2004!";
+    private String password = "quynh04";
     private String url = "jdbc:mysql://localhost:3306/computerstore";
     private Connection conn = null;
     private Statement st = null;
@@ -57,5 +57,9 @@ public class MySQLConnect {
         } catch (SQLException ex) {
             Logger.getLogger(MySQLConnect.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    Object getConnection() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
