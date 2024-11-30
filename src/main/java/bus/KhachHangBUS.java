@@ -25,6 +25,13 @@ public class KhachHangBUS {
         khList = new ArrayList<KhachHangDTO>();
         khList = khDAO.list();
     }
+    
+    public KhachHangDTO getKhachHangByID(String id){
+        return khList.stream()
+                .filter(kh -> kh.getIdKhachHang().equals(id))
+                .findFirst()
+                .orElse(null);
+    } 
 
     public void updateKhachHang(KhachHangDTO kh) {
         for (int i = 0; i < khList.size(); i++) {

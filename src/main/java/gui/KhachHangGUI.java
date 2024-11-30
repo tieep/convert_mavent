@@ -641,4 +641,18 @@ public class KhachHangGUI extends JPanel {
             System.out.println(e);
         }
     }
+    
+    public boolean isSelectedRow(){
+        return table.getSelectedRow() != -1;
+    }
+    
+    public boolean isEditing(){
+        return isEditing;
+    }
+    
+    public KhachHangBUS getKhachHangBUS(){
+        return khachHangBUS;
+    }
+    
+    
 }
