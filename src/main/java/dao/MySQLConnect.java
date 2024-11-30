@@ -58,4 +58,8 @@ public class MySQLConnect {
             Logger.getLogger(MySQLConnect.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    Object getConnection() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }

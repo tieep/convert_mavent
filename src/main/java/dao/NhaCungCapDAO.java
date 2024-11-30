@@ -45,10 +45,11 @@ public class NhaCungCapDAO {
         sql += "WHERE id='" + ncc.getIdNhaCungCap() + "'";
         db.executeUpdate(sql);
     }
+
     public void updateAddress(String idNhaCungCap, String diaChiMoi) {
-    String sql = "UPDATE nhacungcap SET dia_chi='" + diaChiMoi + "' WHERE id='" + idNhaCungCap + "'";
-    db.executeUpdate(sql);
-}
+        String sql = "UPDATE nhacungcap SET dia_chi='" + diaChiMoi + "' WHERE id='" + idNhaCungCap + "'";
+        db.executeUpdate(sql);
+    }
 
     public void addDB(NhaCungCapDTO ncc) {
         String sql = "INSERT INTO nhacungcap VALUES (";
@@ -101,50 +102,53 @@ public class NhaCungCapDAO {
         String sql = "UPDATE nhacungcap SET enable = 0 WHERE id='" + id + "'";
         db.executeUpdate(sql);
     }
-    public boolean deleteDB_by_tiep(String idNhaCungCap) {
-    // Kiểm tra nếu ID không tồn tại trong bảng nhacungcap
-    if (!checkExists(idNhaCungCap)) {
-        throw new IllegalArgumentException("ID nhà cung cấp không tồn tại trong cơ sở dữ liệu.");
-    }
 
-    // Kiểm tra nếu ID đã được tham chiếu trong bảng phieu_nhap
-    if (checkReferencedInPhieuNhap(idNhaCungCap)) {
-        throw new IllegalStateException("ID nhà cung cấp đã được sử dụng trong bảng phiếu nhập, không thể xóa.");
-    }
+    public String deleteDB_by_tiep(String idNhaCungCap) {
+        // Kiểm tra nếu ID không tồn tại trong bảng nhacungcap
+        if (!checkExists(idNhaCungCap)) {
+            throw new IllegalArgumentException("ID nhà cung cấp không tồn tại trong cơ sở dữ liệu.");
+        }
 
-    // Xây dựng câu lệnh SQL trực tiếp
-    String sql = "UPDATE nhacungcap SET enable = 0 WHERE id = '" + idNhaCungCap + "'";
-    db.executeUpdate(sql);
-    return true; // Xóa thành công
-    
-}
+        // Kiểm tra nếu ID được tham chiếu trong bảng phieunhap
+        if (checkReferencedInPhieuNhap(idNhaCungCap)) {
+            // Chỉ cập nhật trạng thái nếu tồn tại tham chiếu
+            String sqlUpdate = "UPDATE nhacungcap SET enable = 0 WHERE id = '" + idNhaCungCap + "'";
+            db.executeUpdate(sqlUpdate);
+            System.out.println("ID nhà cung cấp tồn tại trong phiếu nhập, chỉ cập nhật trạng thái enable = 0.");
+            return "updated"; // Chỉ cập nhật trạng thái
+        } else {
+            // Nếu không được tham chiếu, xóa hoàn toàn
+            String sqlDelete = "DELETE FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
+            db.executeUpdate(sqlDelete);
+            System.out.println("ID nhà cung cấp không tồn tại trong phiếu nhập, xóa hoàn toàn dòng dữ liệu.");
+            return "deleted"; // Xóa hoàn toàn
+        }
+    }
 
     public boolean checkExists(String idNhaCungCap) {
-    String sql = "SELECT COUNT(*) FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
-    try {
-        ResultSet rs = db.executeQuery(sql);
-        if (rs.next()) {
-            return rs.getInt(1) > 0; // Trả về true nếu ID tồn tại
+        String sql = "SELECT COUNT(*) FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
+        try {
+            ResultSet rs = db.executeQuery(sql);
+            if (rs.next()) {
+                return rs.getInt(1) > 0; // Trả về true nếu ID tồn tại
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return false;
     }
-    return false; 
-}
 
     public boolean checkReferencedInPhieuNhap(String idNhaCungCap) {
-    String sql = "SELECT COUNT(*) FROM phieunhap WHERE id_ncc = '" + idNhaCungCap + "'";
-    try {
-        ResultSet rs = db.executeQuery(sql);
-        if (rs.next()) {
-            return rs.getInt(1) > 0; // Trả về true nếu có ít nhất 1 bản ghi
+        String sql = "SELECT COUNT(*) FROM phieunhap WHERE id_ncc = '" + idNhaCungCap + "'";
+        try {
+            ResultSet rs = db.executeQuery(sql);
+            if (rs.next()) {
+                return rs.getInt(1) > 0; // Trả về true nếu có ít nhất 1 bản ghi
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return false;
     }
-    return false;
-}
-
-
 
 }
