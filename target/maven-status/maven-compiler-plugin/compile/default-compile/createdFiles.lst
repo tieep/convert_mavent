@@ -27,7 +27,6 @@ gui\KhachHangGUI$5.class
 gui\NhapHangGUI$1.class
 gui\LoginGUI$1.class
 gui\BaoHanhGUI$6.class
-com\example\CalculatorTest.class
 gui\SanPhamGUI$8.class
 gui\NhaCungCapGUI$10.class
 gui\KhachHangGUI$6.class
@@ -74,7 +73,6 @@ bus\BaoHanhBUS.class
 dao\HoaDonDAO.class
 dto\CTHoaDonDTO.class
 gui\PhieuNhapGUI$2.class
-com\example\Calculator.class
 dto\ChucNangDTO.class
 gui\QuyenGUI$8.class
 gui\NhaCungCapGUI$4.class
