@@ -155,8 +155,11 @@ public class API_Server extends NanoHTTPD {
             HashMap<String, Object> response = new HashMap<>();
             response.put("data", result);
             response.put("status", 200);
-            response.put("message", nccList.isEmpty() ? "Không có dữ liệu phù hợp" : "Lấy danh sách nhà cung cấp thành công");
-
+            if (result.isEmpty()) {
+                response.put("message", "Không có dữ liệu phù hợp");
+            } else {
+                response.put("message", "Lấy danh sách nhà cung cấp thành công");
+            }
             String jsonResponse = objectMapper.writeValueAsString(response);
             return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", jsonResponse);
 
@@ -329,6 +332,12 @@ public class API_Server extends NanoHTTPD {
             if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
                         "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
+            }
+
+            // Kiểm tra định dạng ID nhà cung cấp
+            if (!idNhaCungCap.matches("^CC\\d{3}$")) {
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                        "{\"status\": 400, \"message\": \"ID nhà cung cấp không hợp lệ.\"}");
             }
 
             NhaCungCapDAO nccDAO = new NhaCungCapDAO();
