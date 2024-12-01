@@ -1,5 +1,7 @@
 package dto;
 
+import java.util.Objects;
+
 public class NhaCungCapDTO {
     private String idNhaCungCap;
     private String tenNhaCungCap;
@@ -57,5 +59,17 @@ public class NhaCungCapDTO {
 
     public void setEnable(boolean enable) {
         this.enable = enable;
+    }
+    
+        @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof NhaCungCapDTO that)) return false;
+        return getIdNhaCungCap().equals(that.getIdNhaCungCap());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getIdNhaCungCap());
     }
 }

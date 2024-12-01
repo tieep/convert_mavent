@@ -18,9 +18,13 @@ import dto.NhaCungCapDTO;
 import static fi.iki.elonen.NanoHTTPD.SOCKET_READ_TIMEOUT;
 import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class API_Server extends NanoHTTPD {
 
@@ -53,10 +57,10 @@ public class API_Server extends NanoHTTPD {
         ObjectMapper objectMapper = new ObjectMapper();
 
         switch (uri) {
-            case "/api/get-suppliers":
+            case "/api/find-suppliers":
                 if ("GET".equals(method)) {
 
-                    return handleGetNhaCungCap(session, objectMapper);
+                    return handleFindNhaCungCap(session, objectMapper);
                 }
                 break;
 
@@ -94,34 +98,74 @@ public class API_Server extends NanoHTTPD {
     }
     Map<String, Object> response = new HashMap<>();
 
-    private NanoHTTPD.Response handleGetNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
+    private NanoHTTPD.Response handleFindNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
         try {
             NhaCungCapDAO ncc = new NhaCungCapDAO();
             ArrayList<NhaCungCapDTO> nccList = ncc.list();
-            // Lấy tham số từ query
 
-            String idNhaCungCap = session.getParms().get("idNhaCungCap");
+            // Lấy tham số từ query
+            Map<String, List<String>> params = session.getParameters();
+
+            // Danh sách các key hợp lệ
+            ArrayList<String> validKeys = new ArrayList<>();
+            validKeys.add("type");
+            validKeys.add("find");
+
+            // Kiểm tra nếu có tham số không hợp lệ
+            for (String key : params.keySet()) {
+                if (!validKeys.contains(key)) {
+                    HashMap<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("status", 400);
+                    errorResponse.put("message", "Tham số không hợp lệ: " + key);
+                    String errorJson = objectMapper.writeValueAsString(errorResponse);
+                    return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json", errorJson);
+                }
+            }
+
+            // Lấy giá trị của 'type' và 'find'
+            List<String> searchTypeList = params.get(validKeys.get(0));
+            String searchType = (searchTypeList != null && !searchTypeList.isEmpty()) ? searchTypeList.get(0) : null;
+
+            List<String> contentSearchList = params.get(validKeys.get(1));
+            String contentSearch = (contentSearchList != null && !contentSearchList.isEmpty()) ? contentSearchList.get(0) : null;
+
+            int type = 0; // Tìm kiếm tất cả nếu không có 'type'
+            if (searchType != null) {
+                type = Integer.parseInt(searchType);
+            }
+
+            // Kiểm tra nếu type không hợp lệ
+            if (type > 4) {
+                HashMap<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("status", 400);
+                errorResponse.put("message", "Danh mục tìm kiếm không hợp lệ. Giá trị 'type' phải nằm trong khoảng từ 0 đến 4.");
+                String errorJson = objectMapper.writeValueAsString(errorResponse);
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json", errorJson);
+            }
 
             // Lọc danh sách theo điều kiện
-            if (idNhaCungCap != null && !idNhaCungCap.isEmpty()) {
-                nccList.removeIf(nccItem -> !nccItem.getIdNhaCungCap().equals(idNhaCungCap));
-            }
-            HashMap<String, Object> response = new HashMap<>();
-            response.put("data", nccList);
-            response.put("status", 200);
-            if (nccList.isEmpty()) {
-                response.put("message", "Không có dữ liệu phù hợp");
+            ArrayList<NhaCungCapDTO> result = new ArrayList<>();
+            if (contentSearch != null && !contentSearch.isEmpty()) {
+                result = new ArrayList<>(search(nccList, contentSearch, type));
             } else {
-                response.put("message", "Lấy danh sách nhà cung cấp thành công");
+                result = new ArrayList<>(nccList);
             }
-            // Chuyển danh sách thành JSON
+
+            // Tạo phản hồi JSON
+            HashMap<String, Object> response = new HashMap<>();
+            response.put("data", result);
+            response.put("status", 200);
+            response.put("message", nccList.isEmpty() ? "Không có dữ liệu phù hợp" : "Lấy danh sách nhà cung cấp thành công");
+
             String jsonResponse = objectMapper.writeValueAsString(response);
             return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", jsonResponse);
+
         } catch (Exception e) {
             e.printStackTrace();
             HashMap<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("status", 400);
             errorResponse.put("message", "Bad request");
+
             try {
                 String errorJson = objectMapper.writeValueAsString(errorResponse);
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json", errorJson);
@@ -129,6 +173,61 @@ public class API_Server extends NanoHTTPD {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", "500 Internal Server Error");
             }
         }
+    }
+
+    public LinkedHashSet<NhaCungCapDTO> searchId(ArrayList<NhaCungCapDTO> data, String content) {
+        LinkedHashSet<NhaCungCapDTO> setNCC = new LinkedHashSet<>(data);
+        return setNCC.stream()
+                .filter(ncc -> ncc.getIdNhaCungCap().contains(content))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public LinkedHashSet<NhaCungCapDTO> searchName(ArrayList<NhaCungCapDTO> data, String content) {
+        LinkedHashSet<NhaCungCapDTO> setNCC = new LinkedHashSet<>(data);
+        return setNCC.stream()
+                .filter(ncc -> ncc.getTenNhaCungCap().toLowerCase().contains(content.toLowerCase()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public LinkedHashSet<NhaCungCapDTO> searchDiaChi(ArrayList<NhaCungCapDTO> data, String content) {
+        LinkedHashSet<NhaCungCapDTO> setNCC = new LinkedHashSet<>(data);
+        return setNCC.stream()
+                .filter(ncc -> ncc.getDiachi().toLowerCase().contains(content.toLowerCase()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public LinkedHashSet<NhaCungCapDTO> searchPhone(ArrayList<NhaCungCapDTO> data, String content) {
+        LinkedHashSet<NhaCungCapDTO> setNCC = new LinkedHashSet<>(data);
+        return setNCC.stream()
+                .filter(ncc -> ncc.getSdt().contains(content))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public LinkedHashSet<NhaCungCapDTO> search(ArrayList<NhaCungCapDTO> data, String content, int type) {
+        if (type == 0) {
+            LinkedHashSet<NhaCungCapDTO> setId = searchId(data, content);
+            LinkedHashSet<NhaCungCapDTO> setName = searchName(data, content);
+            LinkedHashSet<NhaCungCapDTO> setDiaChi = searchDiaChi(data, content);
+            LinkedHashSet<NhaCungCapDTO> setPhone = searchPhone(data, content);
+            LinkedHashSet<NhaCungCapDTO> setAll = Stream.of(setId, setName, setPhone, setDiaChi)
+                    .flatMap(LinkedHashSet::stream)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            return setAll;
+        }
+
+        if (type == 1) {
+            return searchId(data, content);
+        }
+        if (type == 2) {
+            return searchName(data, content);
+        }
+        if (type == 3) {
+            return searchDiaChi(data, content);
+        }
+        if (type == 4) {
+            return searchPhone(data, content);
+        }
+        return new LinkedHashSet<>();
     }
 // Xử lý thêm nhà cung cấp
 
