@@ -138,7 +138,7 @@ public class NhaCungCapDAO {
         }
         return false;
     }
-
+    
     public boolean checkReferencedInPhieuNhap(String idNhaCungCap) {
         String sql = "SELECT COUNT(*) FROM phieunhap WHERE id_ncc = '" + idNhaCungCap + "'";
         try {
