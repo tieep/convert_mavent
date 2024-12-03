@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 public class MySQLConnect {
     private String user = "root";
     private String password = "";
-    private String url = "jdbc:mysql://localhost:3306/computerstore";
+    private String url = "jdbc:mysql://localhost:3306/computerstore?useUnicode=true&characterEncoding=UTF-8";
     private Connection conn = null;
     private Statement st = null;
 

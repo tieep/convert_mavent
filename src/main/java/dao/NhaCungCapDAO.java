@@ -16,7 +16,7 @@ public class NhaCungCapDAO {
         ArrayList<NhaCungCapDTO> nccList = new ArrayList<>();
 
         try {
-            String sql = "SELECT * FROM nhacungcap";
+            String sql = "SELECT * FROM nhacungcap where enable=1";
             ResultSet rs = db.executeQuery(sql);
             while (rs.next()) {
                 String id = rs.getString("id");
@@ -104,26 +104,27 @@ public class NhaCungCapDAO {
     }
 
     public String deleteDB_by_tiep(String idNhaCungCap) {
-        // Kiểm tra nếu ID không tồn tại trong bảng nhacungcap
-        if (!checkExists(idNhaCungCap)) {
-            throw new IllegalArgumentException("ID nhà cung cấp không tồn tại trong cơ sở dữ liệu.");
-        }
-
-        // Kiểm tra nếu ID được tham chiếu trong bảng phieunhap
-        if (checkReferencedInPhieuNhap(idNhaCungCap)) {
-            // Chỉ cập nhật trạng thái nếu tồn tại tham chiếu
-            String sqlUpdate = "UPDATE nhacungcap SET enable = 0 WHERE id = '" + idNhaCungCap + "'";
-            db.executeUpdate(sqlUpdate);
-            System.out.println("ID nhà cung cấp tồn tại trong phiếu nhập, chỉ cập nhật trạng thái enable = 0.");
-            return "updated"; // Chỉ cập nhật trạng thái
-        } else {
-            // Nếu không được tham chiếu, xóa hoàn toàn
-            String sqlDelete = "DELETE FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
-            db.executeUpdate(sqlDelete);
-            System.out.println("ID nhà cung cấp không tồn tại trong phiếu nhập, xóa hoàn toàn dòng dữ liệu.");
-            return "deleted"; // Xóa hoàn toàn
-        }
+    // Kiểm tra nếu ID không tồn tại trong bảng nhacungcap
+    if (!checkExists(idNhaCungCap)) {
+        throw new IllegalArgumentException("ID nhà cung cấp không tồn tại trong cơ sở dữ liệu.");
     }
+
+    // Kiểm tra nếu ID được tham chiếu trong bảng phieunhap
+    if (checkReferencedInPhieuNhap(idNhaCungCap)) {
+        // Chỉ cập nhật trạng thái nếu tồn tại tham chiếu
+        String sqlUpdate = "UPDATE nhacungcap SET enable = 0 WHERE id = '" + idNhaCungCap + "'";
+        db.executeUpdate(sqlUpdate);
+        System.out.println("ID nhà cung cấp tồn tại trong phiếu nhập, chỉ cập nhật trạng thái enable = 0.");
+        return "updated"; // Chỉ cập nhật trạng thái
+    } else {
+        // Nếu không được tham chiếu, xóa hoàn toàn
+        String sqlDelete = "DELETE FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
+        db.executeUpdate(sqlDelete);
+        System.out.println("ID nhà cung cấp không tồn tại trong phiếu nhập, xóa hoàn toàn dòng dữ liệu.");
+        return "deleted"; // Xóa hoàn toàn
+    }
+}
+
 
     public boolean checkExists(String idNhaCungCap) {
         String sql = "SELECT COUNT(*) FROM nhacungcap WHERE id = '" + idNhaCungCap + "'";
@@ -150,5 +151,14 @@ public class NhaCungCapDAO {
         }
         return false;
     }
-
+    public boolean isPhoneDuplicate(String sdt){
+        String sql="Select COUNT(*) from nhacungcap where sdt='"+ sdt+"' ";
+        try{
+            ResultSet rs=db.executeQuery(sql);
+            if(rs.next()) return rs.getInt(1)>0;
+        }catch(SQLException e){
+            e.printStackTrace();
+    }
+     return false;   
+}
 }

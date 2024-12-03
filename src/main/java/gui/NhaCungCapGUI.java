@@ -650,6 +650,7 @@ public class NhaCungCapGUI extends JPanel {
     public void loadNCC() {
         if (nhaCungCapBUS.getNccList() == null) {
            nhaCungCapBUS.list();
+            System.err.println("null");
         }
         ArrayList<NhaCungCapDTO> nccList = nhaCungCapBUS.getNccList();
         model.setRowCount(0);

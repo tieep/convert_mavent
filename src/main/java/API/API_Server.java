@@ -8,6 +8,7 @@ package API;
  *
  * @author hp
  */
+import com.fasterxml.jackson.core.JsonGenerator;
 import fi.iki.elonen.NanoHTTPD;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class API_Server extends NanoHTTPD {
         String uri = session.getUri();
         String method = session.getMethod().name();
         ObjectMapper objectMapper = new ObjectMapper();
-
+        objectMapper.configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
         switch (uri) {
             case "/api/find-suppliers":
                 if ("GET".equals(method)) {
@@ -154,14 +155,20 @@ public class API_Server extends NanoHTTPD {
             // Tạo phản hồi JSON
             HashMap<String, Object> response = new HashMap<>();
             response.put("data", result);
-            response.put("status", 200);
+            
             if (result.isEmpty()) {
+                response.put("status", 404);
                 response.put("message", "Không có dữ liệu phù hợp");
+                String jsonResponse = objectMapper.writeValueAsString(response);
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "application/json", jsonResponse);
             } else {
+                response.put("status", 200);
                 response.put("message", "Lấy danh sách nhà cung cấp thành công");
+                String jsonResponse = objectMapper.writeValueAsString(response);
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", jsonResponse);
             }
-            String jsonResponse = objectMapper.writeValueAsString(response);
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", jsonResponse);
+            
+            
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -236,141 +243,223 @@ public class API_Server extends NanoHTTPD {
 
     private NanoHTTPD.Response handleCreateNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
         try {
-            // Đọc dữ liệu từ body
             Map<String, String> body = new HashMap<>();
             session.parseBody(body);
             String payload = body.get("postData");
+            System.err.println("payload:" +payload);
             NhaCungCapDTO newSupplier = objectMapper.readValue(payload, NhaCungCapDTO.class);
 
             // Kiểm tra dữ liệu đầu vào
             if (newSupplier.getTenNhaCungCap() == null || newSupplier.getTenNhaCungCap().isEmpty()) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json", "{\"status\": 400, \"message\": \"Tên nhà cung cấp không được để trống\"}");
-            }
-            if (newSupplier.getSdt() == null || newSupplier.getSdt().isEmpty()) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Số điện thoại không được để trống\"}");
+                        "{\"status\": 400, \"message\": \"Tên nhà cung cấp không được để trống\"}");
             }
-
-            // Kiểm tra nếu số điện thoại chứa ký tự không phải số
-            if (!newSupplier.getSdt().matches("\\d+")) {
+            if (newSupplier.getTenNhaCungCap().length() < 6 || newSupplier.getTenNhaCungCap().length() > 49) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Số điện thoại không hợp lệ\"}");
-            }// thêm kiểm tra điều kiện nếu cần, tại tui thấy cần chụp có 1 trường hợp lỗi thôi nên bắt có 1 lỗi, nếu cần thiết thì làm kĩ hơn
-            NhaCungCapDAO nccDAO = new NhaCungCapDAO();
-            nccDAO.create_ncc(newSupplier);
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json", "{\"status\": 200, \"message\": \"Thêm nhà cung cấp thành công\"}");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json", "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
+                        "{\"status\": 400, \"message\": \"Tên nhà cung cấp phải từ 6 đến 49 ký tự\"}");
+            }
+            // khúc này check kí tự đặc biệt vs chữ số
+        if (!newSupplier.getTenNhaCungCap().matches("^[a-zA-Z\\s]+$")) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Tên nhà cung cấp không được chứa ký tự đặc biệt hoặc chữ số\"}");
         }
-    }
 
-    private NanoHTTPD.Response handleUpdateNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
-        try {
-            Map<String, String> params = session.getParms();
-            String idNhaCungCap = params.get("idNhaCungCap");
-
-            if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
+            if (newSupplier.getDiachi() == null || newSupplier.getDiachi().isEmpty()
+                    || newSupplier.getDiachi().length() < 10 || newSupplier.getDiachi().length() > 60) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
+                        "{\"status\": 400, \"message\": \"Địa chỉ phải từ 10 đến 60 ký tự và không được để trống\"}");
             }
 
-            int contentLength = Integer.parseInt(session.getHeaders().getOrDefault("content-length", "0"));
-            if (contentLength <= 0) {
+            if (!newSupplier.getSdt().matches("^0\\d{9}$")) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Không có dữ liệu\"}");
-            }
-
-            byte[] buffer = new byte[contentLength];
-            int read = session.getInputStream().read(buffer, 0, contentLength);
-            if (read <= 0) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Không đọc được dữ liệu\"}");
-            }
-
-            String payload = new String(buffer, 0, read);
-            System.out.println("Payload: " + payload);
-
-            Map<String, String> requestData = objectMapper.readValue(payload, HashMap.class);
-            String diaChiMoi = requestData.get("diaChi");
-
-            if (diaChiMoi == null || diaChiMoi.isEmpty()) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Địa chỉ mới không được để trống\"}");
-            }
-
-            diaChiMoi = diaChiMoi.trim();
-
-            if (diaChiMoi.length() < 10 || diaChiMoi.length() > 60) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Địa chỉ mới phải có độ dài từ 10 đến 60 ký tự\"}");
-            }
-
-            if (!diaChiMoi.matches("^[a-zA-Z0-9À-ỹ,\\-\\/\\s]+$")) {
-                System.out.println("Địa chỉ không hợp lệ: " + diaChiMoi);
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Địa chỉ mới không hợp lệ.\"}");
+                        "{\"status\": 400, \"message\": \"Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số\"}");
             }
 
             NhaCungCapDAO nccDAO = new NhaCungCapDAO();
-            nccDAO.updateAddress(idNhaCungCap, diaChiMoi);
+            if (nccDAO.isPhoneDuplicate(newSupplier.getSdt())) {
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                        "{\"status\": 400, \"message\": \"Số điện thoại đã tồn tại trong hệ thống\"}");
+            }
 
+            nccDAO.create_ncc(newSupplier);
             return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
-                    "{\"status\": 200, \"message\": \"Cập nhật địa chỉ thành công\"}");
+                    "{\"status\": 200, \"message\": \"Thêm nhà cung cấp thành công\"}");
         } catch (Exception e) {
             e.printStackTrace();
             return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
                     "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
         }
     }
+
+//    private NanoHTTPD.Response handleUpdateNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
+//        try {
+//            Map<String, String> params = session.getParms();
+//            String idNhaCungCap = params.get("idNhaCungCap");
+//
+//            if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
+//            }
+//
+//            int contentLength = Integer.parseInt(session.getHeaders().getOrDefault("content-length", "0"));
+//            if (contentLength <= 0) {
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"Không có dữ liệu\"}");
+//            }
+//
+//            byte[] buffer = new byte[contentLength];
+//            int read = session.getInputStream().read(buffer, 0, contentLength);
+//            if (read <= 0) {
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"Không đọc được dữ liệu\"}");
+//            }
+//
+//            String payload = new String(buffer, 0, read);
+//            System.out.println("Payload: " + payload);
+//
+//            Map<String, String> requestData = objectMapper.readValue(payload, HashMap.class);
+//            String diaChiMoi = requestData.get("diaChi");
+//
+//            if (diaChiMoi == null || diaChiMoi.isEmpty()) {
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"Địa chỉ mới không được để trống\"}");
+//            }
+//
+//            diaChiMoi = diaChiMoi.trim();
+//
+//            if (diaChiMoi.length() < 10 || diaChiMoi.length() > 60) {
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"Địa chỉ mới phải có độ dài từ 10 đến 60 ký tự\"}");
+//            }
+//
+//            if (!diaChiMoi.matches("^[a-zA-Z0-9À-ỹ,\\-\\/\\s]+$")) {
+//                System.out.println("Địa chỉ không hợp lệ: " + diaChiMoi);
+//                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+//                        "{\"status\": 400, \"message\": \"Địa chỉ mới không hợp lệ.\"}");
+//            }
+//
+//            NhaCungCapDAO nccDAO = new NhaCungCapDAO();
+//            nccDAO.updateAddress(idNhaCungCap, diaChiMoi);
+//
+//            return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
+//                    "{\"status\": 200, \"message\": \"Cập nhật địa chỉ thành công\"}");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
+//                    "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
+//        }
+//    }
+    private NanoHTTPD.Response handleUpdateNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
+    try {
+        Map<String, String> params = session.getParms();
+        String idNhaCungCap = params.get("idNhaCungCap");
+
+        int contentLength = Integer.parseInt(session.getHeaders().getOrDefault("content-length", "0"));
+        if (contentLength <= 0) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Không có dữ liệu\"}");
+        }
+
+        byte[] buffer = new byte[contentLength];
+        int read = session.getInputStream().read(buffer, 0, contentLength);
+        if (read <= 0) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Không đọc được dữ liệu\"}");
+        }
+
+        String payload = new String(buffer, 0, read);
+        System.out.println("Payload: " + payload);
+
+        Map<String, String> requestData = objectMapper.readValue(payload, HashMap.class);
+
+        // Kiểm tra nếu idNhaCungCap không có trong params thì lấy từ body
+        if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
+            idNhaCungCap = requestData.get("idNhaCungCap");
+        }
+
+        if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
+        }
+
+        String diaChiMoi = requestData.get("diaChi");
+        if (diaChiMoi == null || diaChiMoi.isEmpty()) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Địa chỉ mới không được để trống\"}");
+        }
+
+        diaChiMoi = diaChiMoi.trim();
+
+        if (diaChiMoi.length() < 10 || diaChiMoi.length() > 60) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Địa chỉ mới phải có độ dài từ 10 đến 60 ký tự\"}");
+        }
+
+        if (!diaChiMoi.matches("^[a-zA-Z0-9À-ỹ,\\-\\/\\s]+$")) {
+            System.out.println("Địa chỉ không hợp lệ: " + diaChiMoi);
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"Địa chỉ mới không hợp lệ.\"}");
+        }
+
+        NhaCungCapDAO nccDAO = new NhaCungCapDAO();
+        nccDAO.updateAddress(idNhaCungCap, diaChiMoi);
+
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
+                "{\"status\": 200, \"message\": \"Cập nhật địa chỉ thành công\"}");
+    } catch (Exception e) {
+        e.printStackTrace();
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
+                "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
+    }
+}
 
 // Xử lý xóa nhà cung cấp
     private NanoHTTPD.Response handleDeleteNhaCungCap(NanoHTTPD.IHTTPSession session, ObjectMapper objectMapper) {
-        try {
-            // Lấy tham số id từ query
-            String idNhaCungCap = session.getParms().get("id");
-            if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
-            }
-
-            // Kiểm tra định dạng ID nhà cung cấp
-            if (!idNhaCungCap.matches("^CC\\d{3}$")) {
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"ID nhà cung cấp không hợp lệ.\"}");
-            }
-
-            NhaCungCapDAO nccDAO = new NhaCungCapDAO();
-
-            try {
-                // Gọi hàm xóa và xử lý theo kết quả trả về
-                String result = nccDAO.deleteDB_by_tiep(idNhaCungCap);
-
-                if ("deleted".equals(result)) {
-                    // Nếu xóa hoàn toàn
-                    return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
-                            "{\"status\": 200, \"message\": \"Xóa nhà cung cấp thành công\"}");
-                } else if ("updated".equals(result)) {
-                    // Nếu chỉ cập nhật trạng thái
-                    String message = "Xóa nhà cung cấp thành công";
-                    return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
-                            "{\"status\": 200, \"message\": \"" + message + "\"}");
-                } else {
-                    // Trường hợp không mong muốn (lý thuyết không xảy ra)
-                    return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
-                            "{\"status\": 500, \"message\": \"Đã xảy ra lỗi không xác định\"}");
-                }
-            } catch (IllegalArgumentException e) {
-                // Xử lý lỗi ID không tồn tại
-                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"" + e.getMessage() + "\"}");
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
-                    "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
+    try {
+        // Lấy tham số id từ query
+        String idNhaCungCap = session.getParms().get("idNhaCungCap");
+        if (idNhaCungCap == null || idNhaCungCap.isEmpty()) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"ID nhà cung cấp không được để trống\"}");
         }
+
+        // Kiểm tra định dạng ID nhà cung cấp
+        if (!idNhaCungCap.matches("^CC\\d{3}$")) {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                    "{\"status\": 400, \"message\": \"ID nhà cung cấp không hợp lệ.\"}");
+        }
+
+        NhaCungCapDAO nccDAO = new NhaCungCapDAO();
+
+        try {
+            // Gọi hàm xóa và xử lý theo kết quả trả về
+            String result = nccDAO.deleteDB_by_tiep(idNhaCungCap);
+
+            if ("deleted".equals(result)) {
+                // Nếu xóa hoàn toàn
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
+                        "{\"status\": 200, \"message\": \"Xóa nhà cung cấp thành công\"}");
+            } else if ("updated".equals(result)) {
+                // Nếu chỉ cập nhật trạng thái
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "application/json",
+                        "{\"status\": 200, \"message\": \"Xóa nhà cung cấp thành công\"}");
+            } else {
+                // Trường hợp không mong muốn (lý thuyết không xảy ra)
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
+                        "{\"status\": 500, \"message\": \"Đã xảy ra lỗi không xác định\"}");
+            }
+        } catch (IllegalArgumentException e) {
+            // Trả về lỗi 404 nếu ID không tồn tại
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "application/json",
+                    "{\"status\": 404, \"message\": \"" + e.getMessage() + "\"}");
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "application/json",
+                "{\"status\": 500, \"message\": \"Đã xảy ra lỗi\"}");
     }
+}
+
 
 }
