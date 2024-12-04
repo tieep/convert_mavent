@@ -258,7 +258,7 @@ public class API_Server extends NanoHTTPD {
             }
             if (newSupplier.getTenNhaCungCap().length() >= 50) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
-                        "{\"status\": 400, \"message\": \"Tên nhà cung cấp phải không được vượt quá 50 kí tự\"}");
+                        "{\"status\": 400, \"message\": \"Tên nhà cung cấp phải dưới 50 kí tự\"}");
             }
             // khúc này check kí tự đặc biệt vs chữ số
             if (!newSupplier.getTenNhaCungCap().matches("^[a-zA-Z\\s]+$")) {
@@ -278,6 +278,10 @@ public class API_Server extends NanoHTTPD {
             if (newSupplier.getDiachi().length() < 11) {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
                         "{\"status\": 400, \"message\": \"Địa chỉ phải trên 10 kí tự\"}");
+            }
+            if (newSupplier.getDiachi().length() >= 60) {
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                        "{\"status\": 400, \"message\": \"Địa chỉ nhà cung cấp dưới 60  kí tự\"}");
             }
             String diaChi = newSupplier.getDiachi().trim();
             if (!diaChi.matches("^[a-zA-Z0-9À-ỹ,\\-\\/\\s]+$")) {
@@ -421,7 +425,10 @@ public class API_Server extends NanoHTTPD {
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
                         "{\"status\": 400, \"message\": \"Địa chỉ nhà cung cấp phải trên 10 kí tự\"}");
             }
-
+            if (diaChiMoi.length() > 60) {
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",
+                        "{\"status\": 400, \"message\": \"Địa chỉ nhà cung cấp dưới 60  kí tự\"}");
+            }
             if (!diaChiMoi.matches("^[a-zA-Z0-9À-ỹ,\\-\\/\\s]+$")) {
                 System.out.println("Địa chỉ không hợp lệ: " + diaChiMoi);
                 return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST, "application/json",

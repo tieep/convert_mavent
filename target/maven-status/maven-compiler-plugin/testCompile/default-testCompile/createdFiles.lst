@@ -1,3 +1,2 @@
 gui\PhieuNhapGUITest.class
-com\example\Calculator.class
-com\example\CalculatorTest.class
+gui\SuaKhachHangGUITest.class
