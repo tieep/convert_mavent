@@ -38,7 +38,7 @@ public class SuaKhachHangGUITest {
         String idKH = "KH001";
         KhachHangDTO old = khachhangGUI.getKhachHangBUS().getKhachHangByID(idKH);
         String updateDiaChi = "Phan Xích Long";
-        if(!updateDiaChi.isEmpty()){
+        if(updateDiaChi.length() >= 10 && updateDiaChi.length() <= 50){
             KhachHangDTO update = new KhachHangDTO(old.getIdKhachHang(), old.getTenKhachHang(),
                     updateDiaChi,
                     old.getSdt(), true );

@@ -27,6 +27,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -172,8 +173,23 @@ public class PhieuNhapGUI extends JPanel {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 String txt = tf_tim_kiem.getText();
-                int choice = cb_tim_kiem.getSelectedIndex();
-                rowSorter.setRowFilter(createRowFilter(txt.trim(), choice));
+
+                if (txt.length() > 5) {
+                    // Trì hoãn việc thay đổi văn bản
+                    SwingUtilities.invokeLater(() -> {
+                        try {
+                            // Cắt chuỗi để giới hạn tối đa 5 ký tự
+                            tf_tim_kiem.setText(txt.substring(0, 5));
+                            JOptionPane.showMessageDialog(null, "Mã không vượt quá 5 ký tự");
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    });
+                } else {
+                    // Nếu độ dài <= 5, thực hiện lọc theo giá trị tìm kiếm
+                    int choice = cb_tim_kiem.getSelectedIndex();
+                    rowSorter.setRowFilter(createRowFilter(txt.trim(), choice));
+                }
             }
 
             @Override
@@ -219,11 +235,12 @@ public class PhieuNhapGUI extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 Date input1 = date_from.getDate();
                 Date input2 = date_to.getDate();
-                ArrayList<PhieuNhapDTO> result= getSearchList(input1, input2);
-                if (result == null)
+                ArrayList<PhieuNhapDTO> result = getSearchList(input1, input2);
+                if (result == null) {
                     JOptionPane.showMessageDialog(null, "Khoảng thời gian không hợp lệ");
-                else
+                } else {
                     reloadPN(result);
+                }
             }
         });
 

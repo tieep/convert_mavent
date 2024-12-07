@@ -1,0 +1,4 @@
+# Created at 2024-12-04T13:33:05.492
+Boot Manifest-JAR contains absolute paths in classpath 'D:\Junit\API_NhaCungCap_moinhat\convert_mavent\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+
